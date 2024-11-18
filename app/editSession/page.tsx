@@ -1,7 +1,8 @@
 export default function editSession() {
     return(
         <>
-        editSession
+        editSession:
+        Ver0.2
         </>
     );
 }

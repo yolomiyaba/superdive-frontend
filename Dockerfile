@@ -12,11 +12,17 @@ RUN apt-get update && apt-get install -y \
 # 作業ディレクトリを設定
 WORKDIR /workspace
 
+# アプリケーションのソースコードをコンテナにコピー
+COPY . .
+
+# 必要なパッケージをインストール
+RUN npm install
+
 # Next.js で必要なポートを開放
 EXPOSE 3000
 
-# 環境変数の設定（必要に応じて）
+# 環境変数の設定（Next.js のテレメトリー機能を無効化）
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# コンテナ内で実行するコマンド（コンテナ起動時に実行）
-CMD ["bash"]
+# コンテナ起動時に実行するコマンドを設定
+CMD ["npm", "run", "dev"]

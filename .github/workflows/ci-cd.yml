@@ -46,6 +46,6 @@ jobs:
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          service: superdive-demo-frontend-cluster
+          service: superdive-demo-frontend
           cluster: SuperDive-Demo-Frotnend-Cluster
           task-definition: ${{ steps.task-def.outputs.task-definition }}

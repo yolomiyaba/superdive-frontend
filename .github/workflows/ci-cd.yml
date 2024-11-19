@@ -47,5 +47,5 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           service: superdive-demo-frontend
-          cluster: SuperDive-Demo-Frotnend-Cluster
+          cluster: SuperDive-Demo-Frontend-Cluster
           task-definition: ${{ steps.task-def.outputs.task-definition }}

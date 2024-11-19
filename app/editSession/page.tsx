@@ -2,7 +2,7 @@ export default function editSession() {
     return(
         <>
         editSession:
-        Ver0.3
+        Ver0.4
         </>
     );
 }

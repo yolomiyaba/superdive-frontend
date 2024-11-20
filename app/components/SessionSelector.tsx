@@ -40,7 +40,6 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({ onSessionStart }) => 
 
   return (
     <div>
-      <h1>セッション選択</h1>
       <select value={selectedSession ?? ""} onChange={(e) => setSelectedSession(Number(e.target.value))}>
         <option value="" disabled>
           セッションを選択してください

@@ -1,66 +1,228 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Box,
-  Select,
-  MenuItem,
-  TextField,
-  IconButton,
-  Button,
-  Paper,
-} from "@mui/material";
+import { Box, TextField, IconButton, Button, Paper } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
-import "@fontsource/inter"; // フォントをインポート
+import "@fontsource/inter";
 
 type RowData = {
   id: string;
-  type: "固定" | "生成";
   script: string;
-  prompt: string;
   timeLimit: number | "";
   audio: string;
+  child?: RowData; // 子行（1つだけ持てる）
 };
 
 const EditableTable: React.FC = () => {
   const [rows, setRows] = useState<RowData[]>([
-    { id: "1", type: "固定", script: "", prompt: "", timeLimit: "", audio: "" },
-    { id: "2", type: "生成", script: "", prompt: "", timeLimit: "", audio: "" },
+    {
+      id: "1",
+      script: "",
+      timeLimit: "",
+      audio: "",
+      child: undefined,
+    },
   ]);
 
   const handleAddRow = () => {
     const newRow: RowData = {
-      id: (rows.length + 1).toString(),
-      type: "固定",
+      id: `${Math.random().toString(36).substr(2, 9)}`,
       script: "",
-      prompt: "",
       timeLimit: "",
       audio: "",
+      child: undefined,
     };
     setRows((prevRows) => [...prevRows, newRow]);
   };
 
-  const handleChange = (index: number, field: keyof RowData, value: any) => {
+  const handleAddChildRow = (parentId: string) => {
     setRows((prevRows) =>
-      prevRows.map((row, i) =>
-        i === index ? { ...row, [field]: value } : row
+      prevRows.map((row) =>
+        row.id === parentId && !row.child
+          ? { ...row, child: { id: `${parentId}-child`, script: "", timeLimit: "", audio: "" } }
+          : row
       )
     );
   };
 
-  const handleDeleteRow = (index: number) => {
-    setRows((prevRows) => prevRows.filter((_, i) => i !== index));
+  const handleChange = (
+    id: string,
+    field: keyof RowData,
+    value: any,
+    rows: RowData[]
+  ): RowData[] => {
+    return rows.map((row) =>
+      row.id === id
+        ? { ...row, [field]: value }
+        : {
+            ...row,
+            child: row.child
+              ? {
+                  ...row.child,
+                  ...(row.child.id === id ? { [field]: value } : {}),
+                }
+              : undefined,
+          }
+    );
   };
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
-    const reorderedRows = Array.from(rows);
-    const [movedRow] = reorderedRows.splice(result.source.index, 1);
-    reorderedRows.splice(result.destination.index, 0, movedRow);
-    setRows(reorderedRows);
+  const handleDeleteRow = (id: string, rows: RowData[]): RowData[] => {
+    return rows
+      .filter((row) => row.id !== id)
+      .map((row) => ({
+        ...row,
+        child: row.child?.id === id ? undefined : row.child,
+      }));
   };
+
+  const renderRows = (rows: RowData[]) =>
+    rows.map((row, index) => (
+      <Paper
+        key={row.id}
+        sx={{
+          marginBottom: "16px",
+          padding: "16px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          backgroundColor: "#fff",
+        }}
+      >
+        {/* 大枠：固定スクリプト */}
+        <Box
+          sx={{
+            marginBottom: "16px",
+            display: "flex",
+            alignItems: "center",
+            fontWeight: "bold",
+          }}
+        >
+          固定スクリプト
+          <Box
+            sx={{
+              marginLeft: "8px",
+              fontWeight: "normal",
+              color: "#6b7280", // 灰色
+              fontSize: "0.875rem", // 小さめの文字サイズ
+            }}
+          >
+            #{index + 1}
+          </Box>
+        </Box>
+        <Box sx={{ marginBottom: "16px" }}>
+          <TextField
+            value={row.script}
+            onChange={(e) =>
+              setRows((prevRows) =>
+                handleChange(row.id, "script", e.target.value, prevRows)
+              )
+            }
+            placeholder="スクリプト"
+            fullWidth
+            multiline
+            minRows={3}
+            sx={{ marginBottom: "8px" }}
+          />
+          <Box sx={{ display: "flex", gap: "16px" }}>
+            <TextField
+              type="number"
+              value={row.timeLimit}
+              onChange={(e) =>
+                setRows((prevRows) =>
+                  handleChange(
+                    row.id,
+                    "timeLimit",
+                    e.target.value === "" ? "" : Number(e.target.value),
+                    prevRows
+                  )
+                )
+              }
+              placeholder="秒数"
+              fullWidth
+            />
+            <TextField
+              value={row.audio}
+              onChange={(e) =>
+                setRows((prevRows) =>
+                  handleChange(row.id, "audio", e.target.value, prevRows)
+                )
+              }
+              placeholder="BGM"
+              fullWidth
+            />
+          </Box>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <IconButton
+            color="error"
+            onClick={() =>
+              setRows((prevRows) => handleDeleteRow(row.id, prevRows))
+            }
+          >
+            <DeleteIcon />
+          </IconButton>
+          {!row.child && (
+            <Button
+              variant="contained"
+              onClick={() => handleAddChildRow(row.id)}
+              sx={{ backgroundColor: "#3b82f6" }}
+            >
+              生成スクリプトを追加
+            </Button>
+          )}
+        </Box>
+  
+        {/* 子行：生成スクリプト */}
+        {row.child && (
+          <Box
+            sx={{
+              padding: "16px",
+              marginTop: "16px",
+              border: "1px dashed #ccc",
+              borderRadius: "8px",
+              backgroundColor: "#f9f9f9",
+            }}
+          >
+            <Box sx={{ fontWeight: "bold", marginBottom: "8px" }}>
+              生成スクリプト
+            </Box>
+            <TextField
+              value={row.child.script}
+              onChange={(e) =>
+                setRows((prevRows) =>
+                  handleChange(
+                    row.child!.id,
+                    "script",
+                    e.target.value,
+                    prevRows
+                  )
+                )
+              }
+              placeholder="スクリプト"
+              fullWidth
+              multiline
+              minRows={3}
+              sx={{ marginBottom: "8px" }}
+            />
+            <Box sx={{ marginTop: "16px", textAlign: "right" }}>
+              <IconButton
+                color="error"
+                onClick={() =>
+                  setRows((prevRows) =>
+                    prevRows.map((r) =>
+                      r.id === row.id ? { ...r, child: undefined } : r
+                    )
+                  )
+                }
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+      </Paper>
+    ));
+  
 
   return (
     <Box
@@ -69,126 +231,17 @@ const EditableTable: React.FC = () => {
         backgroundColor: "#f6f6f6",
       }}
     >
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="table">
-          {(provided) => (
-            <Box
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              sx={{
-                backgroundColor: "white",
-                borderRadius: "8px",
-                boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
-                overflow: "hidden",
-              }}
-            >
-              {rows.map((row, index) => (
-                <Draggable key={row.id} draggableId={row.id} index={index}>
-                  {(provided) => (
-                    <Paper
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "8px 16px",
-                        borderBottom: "1px solid #e0e0e0",
-                        "&:last-child": { borderBottom: "none" },
-                      }}
-                    >
-                      {/* 行番号の列 */}
-                      <Box
-                        sx={{
-                          width: "40px",
-                          textAlign: "center",
-                          marginRight: "8px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {index + 1}
-                      </Box>
-                      <Select
-                        value={row.type}
-                        onChange={(e) =>
-                          handleChange(index, "type", e.target.value as "固定" | "生成")
-                        }
-                        fullWidth
-                        sx={{ marginRight: "8px", maxWidth: "120px" }}
-                      >
-                        <MenuItem value="固定">固定</MenuItem>
-                        <MenuItem value="生成">生成</MenuItem>
-                      </Select>
-                      <TextField
-                        value={row.script}
-                        onChange={(e) =>
-                          handleChange(index, "script", e.target.value)
-                        }
-                        placeholder="スクリプト"
-                        fullWidth
-                        sx={{ marginRight: "8px" }}
-                      />
-                      <TextField
-                        type="number"
-                        value={row.timeLimit}
-                        // onChange={(e) =>
-                        //   handleChange(index, "timeLimit", e.target.valueAsNumber || "")
-                        // }
-                        placeholder="秒数"
-                        fullWidth
-                        sx={{ marginRight: "8px", maxWidth: "100px" }}
-                      />
-                      <TextField
-                        value={row.audio}
-                        onChange={(e) =>
-                          handleChange(index, "audio", e.target.value)
-                        }
-                        placeholder="BGM"
-                        fullWidth
-                        sx={{ marginRight: "8px" }}
-                      />
-                      <IconButton
-                        color="error"
-                        onClick={() => handleDeleteRow(index)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Paper>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </Box>
-          )}
-        </Droppable>
-      </DragDropContext>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "16px",
-        }}
+      {renderRows(rows)}
+      <Button
+        variant="contained"
+        startIcon={<AddCircleOutlineIcon />}
+        onClick={handleAddRow}
+        sx={{ marginTop: "16px", backgroundColor: "#3b82f6" }}
       >
-        <Button
-          variant="contained"
-          startIcon={<AddCircleOutlineIcon />}
-          onClick={handleAddRow}
-          sx={{ backgroundColor: "#3b82f6" }}
-        >
-          行を追加
-        </Button>
-        <Button
-          variant="contained"
-          // startIcon={<SaveIcon />}
-          // onClick={handleSave}
-          sx={{ backgroundColor: "#10b981" }}
-        >
-          保存
-        </Button>
-      </Box>
+        固定スクリプトを追加
+      </Button>
     </Box>
-  );  
-  
+  );
 };
 
 export default EditableTable;

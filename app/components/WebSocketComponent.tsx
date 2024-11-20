@@ -8,14 +8,14 @@ const WebSocketComponent = () => {
   const [messages, setMessages] = useState<string[]>([]);
   
   // WebSocketサーバーのURL
-  const socketUrl = 'ws://localhost:8000/ws';
+  const socketUrl = 'ws://superdive-demo-backend-alb-179482814.ap-northeast-1.elb.amazonaws.com/ws';
 
   // WebSocket接続を初期化
   const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl, {
     onOpen: () => console.log('Connected to WebSocket'),
     onClose: () => console.log('Disconnected from WebSocket'),
     onError: (event) => console.error('WebSocket error:', event),
-    shouldReconnect: (closeEvent) => true, // 自動再接続
+    // shouldReconnect: (closeEvent) => true, // 自動再接続
   });
 
   // 新しいメッセージを受信した場合に更新

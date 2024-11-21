@@ -1,9 +1,9 @@
 "use client";
 
 import { ConstructionOutlined } from "@mui/icons-material";
-import EditableTable from "../components/EditableTable";
+import EditableTable from "./components/EditableTable";
 import HeaderComponent from "../components/HeaderComponent";
-import SessionSelectorForEdit from "../components/SessionSelectorForEdit";
+import SessionSelectorForEdit from "./components/SessionSelectorForEdit";
 import { useState } from "react";
 
 

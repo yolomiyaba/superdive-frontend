@@ -1,6 +1,6 @@
 "use client";
 import HeaderComponent from '../components/HeaderComponent';
-import SessionComponent from '../components/SessionComponent';
+import SessionComponent from './components/SessionComponent';
 
 export default function Home() {
   return (

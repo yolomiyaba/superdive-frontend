@@ -1,50 +1,34 @@
-// components/WebSocketComponent.tsx
-'use client';
+// // STTLoggerComponent.tsx
+// import React from 'react';
 
-import React, { useState } from 'react';
-import useWebSocket from 'react-use-websocket';
+// interface STTLoggerComponentProps {
+//   logs: { message: string; type: 'user' | 'server'; timestamp: string }[];
+// }
 
-const WebSocketComponent = () => {
-  const [messages, setMessages] = useState<string[]>([]);
-  
-  // WebSocketサーバーのURL
-  const socketUrl = 'ws://superdive-demo-backend-alb-179482814.ap-northeast-1.elb.amazonaws.com/ws';
+// const STTLoggerComponent: React.FC<STTLoggerComponentProps> = ({ logs }) => {
+//   return (
+//     <div className="h-full overflow-y-auto p-4 bg-gray-50">
+//       <h2 className="text-xl font-bold mb-4">通信ログ</h2>
+//       <div className="space-y-2">
+//         {logs.map((log, index) => (
+//           <div
+//             key={index}
+//             className={`p-2 rounded ${
+//               log.type === 'user' ? 'bg-blue-100' : 'bg-green-100'
+//             }`}
+//           >
+//             <div className="text-xs text-gray-500">{log.timestamp}</div>
+//             <div className="mt-1">
+//               <span className="font-bold">
+//                 {log.type === 'user' ? 'You: ' : 'Server: '}
+//               </span>
+//               {log.message}
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
 
-  // WebSocket接続を初期化
-  const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl, {
-    onOpen: () => console.log('Connected to WebSocket'),
-    onClose: () => console.log('Disconnected from WebSocket'),
-    onError: (event) => console.error('WebSocket error:', event),
-    // shouldReconnect: (closeEvent) => true, // 自動再接続
-  });
-
-  // 新しいメッセージを受信した場合に更新
-  React.useEffect(() => {
-    if (lastMessage !== null) {
-      setMessages((prev) => [...prev, lastMessage.data]);
-    }
-  }, [lastMessage]);
-
-  // WebSocketの状態
-  const connectionStatus: { [key: number]: string } = {
-    0: 'Connecting',
-    1: 'Open',
-    2: 'Closing',
-    3: 'Closed',
-  };
-  const status = connectionStatus[readyState] ?? 'Unknown';
-
-  return (
-    <div>
-      <h1>WebSocket Status: {status}</h1>
-      <button onClick={() => sendMessage('Hello WebSocket!')}>Send Message</button>
-      <ul>
-        {messages.map((msg, idx) => (
-          <li key={idx}>{msg}</li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-export default WebSocketComponent;
+// export default STTLoggerComponent;

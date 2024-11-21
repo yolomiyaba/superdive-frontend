@@ -1,8 +1,9 @@
 // SessionSelector.tsx
 import React, { useState, useEffect } from "react";
-import { Session, SessionResponse, SessionSelectorForEditProps } from "../types/chat";
+import { Session, SessionResponse, SessionSelectorProps } from "../../types/chat";
 
-const SessionSelectorForEdit: React.FC<SessionSelectorForEditProps> = ({ onSessionSelected }) => {
+const SessionSelector: React.FC<SessionSelectorProps> = ({ onSessionSelected }) => {
+  const [userId, setUserId] = useState<string>("");
   const [selectedSession, setSelectedSession] = useState<string>("");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,7 @@ const SessionSelectorForEdit: React.FC<SessionSelectorForEditProps> = ({ onSessi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSession) {
+    if (!userId.trim() || !selectedSession) {
       alert("ユーザーIDとセッションを選択してください");
       return;
     }
@@ -52,13 +53,14 @@ const SessionSelectorForEdit: React.FC<SessionSelectorForEditProps> = ({ onSessi
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            user_id: userId,
             session_id: parseInt(selectedSession),
           }),
         }
       );
 
       if (response.ok) {
-        onSessionSelected(parseInt(selectedSession));
+        onSessionSelected(userId, parseInt(selectedSession));
       } else {
         throw new Error("セッション選択に失敗しました");
       }
@@ -78,6 +80,20 @@ const SessionSelectorForEdit: React.FC<SessionSelectorForEditProps> = ({ onSessi
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="userId" className="block text-sm font-medium text-gray-700">
+          ユーザーID
+        </label>
+        <input
+          type="text"
+          id="userId"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          placeholder="ユーザーIDを入力"
+          required
+        />
+      </div>
 
       <div>
         <label htmlFor="session" className="block text-sm font-medium text-gray-700">
@@ -112,4 +128,4 @@ const SessionSelectorForEdit: React.FC<SessionSelectorForEditProps> = ({ onSessi
   );
 };
 
-export default SessionSelectorForEdit;
+export default SessionSelector;

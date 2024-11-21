@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import STTLoggerComponent from "./STTLoggerComponent";
 import SessionSelector from "./SessionSelector";
 import SessionChat from "./SessionChat";
-import { Message } from "../types/chat";
+import { Message } from "../../types/chat";
 
 // interface Log {
 //   message: string;

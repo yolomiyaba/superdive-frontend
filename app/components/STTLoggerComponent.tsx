@@ -13,7 +13,7 @@ interface Message {
   const STTLoggerComponent: React.FC<STTLoggerComponentProps> = ({ logs }) => {
     return (
       <div className="h-full overflow-y-auto p-4 bg-gray-50">
-        <h2 className="text-xl font-bold mb-4">通信ログ</h2>
+        <h2 className="text-xl font-bold mb-4">セッションログ</h2>
         <div className="space-y-2">
           {logs.map((log, index) => (
             <div

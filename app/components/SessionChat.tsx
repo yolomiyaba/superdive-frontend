@@ -1,81 +1,86 @@
 // SessionChat.tsx
 import React, { useCallback, useEffect, useState } from "react";
-import { Message } from "../types/chat";
+// import { Message } from "../types/chat";
 
 interface SessionChatProps {
   userId: string;
   sessionId: number;
-  onNewLog: (message: string, type: 'user' | 'server') => void;
+//   onNewLog: (message: string, type: 'user' | 'server') => void;
 }
 
-const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId, onNewLog }) => {
+//22 
+// const processServerMessage = (rawMessage: string): Message => {
+    //     const timestamp = new Date().toLocaleTimeString();
+      
+    //     // システムメッセージの判定（参加・退出）
+    //     if (rawMessage.includes('joined the session') || rawMessage.includes('left the session')) {
+    //       return {
+    //         text: rawMessage,
+    //         type: 'system',
+    //         timestamp
+    //       };
+    //     }
+      
+    //     // エコーメッセージの判定（自分の発言）
+    //     if (rawMessage.startsWith('You: ')) {
+    //       return {
+    //         text: rawMessage.replace('You: ', ''),
+    //         type: 'user',
+    //         sender: 'You',
+    //         timestamp
+    //       };
+    //     }
+      
+    //     // 他のユーザーからのメッセージの判定
+    //     if (rawMessage.startsWith('User ')) {
+    //       const [, userId, ...messageParts] = rawMessage.match(/User (.*?): (.*)/) || [];
+    //       if (userId && messageParts) {
+    //         return {
+    //           text: messageParts.join(''),
+    //           type: 'server',
+    //           sender: userId,
+    //           timestamp
+    //         };
+    //       }
+    //     }
+      
+    //     // Echo: プレフィックスの除去
+    //     if (rawMessage.startsWith('Echo: ')) {
+    //       return {
+    //         text: rawMessage.replace('Echo: ', ''),
+    //         type: 'user',
+    //         sender: 'You',
+    //         timestamp
+    //       };
+    //     }
+      
+    //     // その他のメッセージ
+    //     return {
+    //       text: rawMessage,
+    //       type: 'server',
+    //       timestamp
+    //     };
+    //   };
+
+const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId }) => { //onNewLog
   const [input, setInput] = useState<string>("");
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [lastMessage, setLastMessage] = useState<string>("");
 
   useEffect(() => {
     const ws = new WebSocket(
-      `ws://superdive-demo-backend-alb-179482814.ap-northeast-1.elb.amazonaws.com/ws/chat/${userId}`
+    //   `ws://superdive-demo-backend-alb-179482814.ap-northeast-1.elb.amazonaws.com/ws/chat/${userId}`
+    `ws://0.0.0.0:8000/ws/chat/${userId}`
     );
-
-    const processServerMessage = (rawMessage: string): Message => {
-        const timestamp = new Date().toLocaleTimeString();
-      
-        // システムメッセージの判定（参加・退出）
-        if (rawMessage.includes('joined the session') || rawMessage.includes('left the session')) {
-          return {
-            text: rawMessage,
-            type: 'system',
-            timestamp
-          };
-        }
-      
-        // エコーメッセージの判定（自分の発言）
-        if (rawMessage.startsWith('You: ')) {
-          return {
-            text: rawMessage.replace('You: ', ''),
-            type: 'user',
-            sender: 'You',
-            timestamp
-          };
-        }
-      
-        // 他のユーザーからのメッセージの判定
-        if (rawMessage.startsWith('User ')) {
-          const [, userId, ...messageParts] = rawMessage.match(/User (.*?): (.*)/) || [];
-          if (userId && messageParts) {
-            return {
-              text: messageParts.join(''),
-              type: 'server',
-              sender: userId,
-              timestamp
-            };
-          }
-        }
-      
-        // Echo: プレフィックスの除去
-        if (rawMessage.startsWith('Echo: ')) {
-          return {
-            text: rawMessage.replace('Echo: ', ''),
-            type: 'user',
-            sender: 'You',
-            timestamp
-          };
-        }
-      
-        // その他のメッセージ
-        return {
-          text: rawMessage,
-          type: 'server',
-          timestamp
-        };
-      };
     
       ws.onmessage = (event) => {
         console.log('Received message:', event.data);
-        const message = processServerMessage(event.data);
-        onNewLog(message.text, 'user');
+        setLastMessage(event.data);
+        // const message = processServerMessage(event.data);
+        // onNewLog(message.text, 'user');
+        // onNewLog(event.data.text, 'user');
       };
 
       ws.onerror = (error) => {
@@ -90,21 +95,21 @@ const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId, onNewLog }
 
     return () => {
       if (ws.readyState === WebSocket.OPEN) {
-        // ws.close();
-        console.log('ds')
+        ws.close();
+        // console.log('ds')
       }
     };
-  }, [userId, sessionId, onNewLog]);
+  }, [userId, sessionId]); //, onNewLog
 
   const sendMessage = useCallback(
     (message: string) => {
       if (!socket || !message.trim()) return;
       
       socket.send(message);
-      onNewLog(message, 'user');
+    //   onNewLog(message, 'user');
       setInput("");
     },
-    [socket, onNewLog]
+    [socket] //, onNewLog
   );
 
   useEffect(() => {
@@ -140,7 +145,12 @@ const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId, onNewLog }
   return (
     <div className="h-full flex flex-col">
       <div className="flex-grow overflow-y-auto p-4">
-        <h1 className="text-xl font-bold mb-4">セッションチャット</h1>
+        <h1 className="text-xl font-bold mb-4">お題</h1>
+
+        <div className="p-2 bg-gray-100 rounded mb-4">
+          {lastMessage ? `${lastMessage}` : "まだメッセージがありません"}
+        </div>
+
         <div className="space-y-4 mb-4">
           <button
             onClick={() => setIsVoiceMode((prev) => !prev)}

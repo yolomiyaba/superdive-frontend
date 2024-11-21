@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
-
-interface Session {
-  id: number;
-  name: string;
-}
+import { Session } from "../types/chat";
 
 const SessionEditSelector: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -23,7 +19,7 @@ const SessionEditSelector: React.FC = () => {
 
   return (
     <FormControl fullWidth>
-      <InputLabel id="session-select-label">セッションを選択してください</InputLabel>
+      <InputLabel id="session-select-label">セッションssを選択してください</InputLabel>
       <Select
         labelId="session-select-label"
         value={selectedSession ?? ""}

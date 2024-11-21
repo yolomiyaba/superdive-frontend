@@ -18,7 +18,11 @@ export interface Message {
   }
   
   export interface SessionSelectorProps {
-    onSessionStart: (userId: string, sessionId: number) => void;
+    onSessionSelected: (userId: string, sessionId: number) => void;
+  }
+
+  export interface SessionSelectorForEditProps {
+    onSessionSelected: (sessionId: number) => void;
   }
   
   export interface SessionChatProps {

@@ -49,7 +49,7 @@ const SessionComponent = () => {
           </>
         ) : (
           <div className="flex-1 p-4">
-            <SessionSelector onSessionStart={handleSessionStart} />
+            <SessionSelector onSessionSelected={handleSessionStart} />
           </div>
         )}
       </div>

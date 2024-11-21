@@ -1,12 +1,19 @@
 "use client";
 
+import { ConstructionOutlined } from "@mui/icons-material";
 import EditableTable from "../components/EditableTable";
 import HeaderComponent from "../components/HeaderComponent";
-import SessionEditSelector from "../components/SessionEditSelector";
+import SessionSelectorForEdit from "../components/SessionSelectorForEdit";
 import { useState } from "react";
 
-export default function editSession() {
+
+export default function EditSession() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [sessionId, setSessionId] = useState<number | null>(null);
+  
+    const handleSessionSelected = (sessionId: number) => {
+      setSessionId(sessionId);
+    };
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
@@ -23,6 +30,10 @@ export default function editSession() {
         }
     };
 
+    const handleSessionLoadForEdit = (sessionId: number) => {
+        console.log(sessionId);
+    }
+
     return (
         <>
         <HeaderComponent />
@@ -30,7 +41,7 @@ export default function editSession() {
             <div className="w-full max-w-4xl px-4">
                 <h1 className="text-3xl font-bold mb-4 mt-8">セッションを編集する</h1>
                 <div className="mb-4">
-                    <SessionEditSelector />
+                    <SessionSelectorForEdit onSessionSelected={handleSessionSelected}/>
                 </div>
                 <div className="mb-4">
                     {/* ファイルアップロードエリア */}

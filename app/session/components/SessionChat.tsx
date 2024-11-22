@@ -115,12 +115,18 @@ const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId, onNewLog }
     setIsListening(false);
   };
 
-  const handleNextQuestion = () => {
+  const handleSendMessage = (goToNext: boolean) => {
     if (!currentTranscript.trim()) return;
 
     // WebSocketで送信
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(currentTranscript);
+      // socketRef.current.send(currentTranscript);
+      socketRef.current.send(
+        JSON.stringify({
+          content: currentTranscript,
+          go_to_next: goToNext, // フラグを送信
+        })
+      );
     }
 
     // ログに登録
@@ -129,6 +135,14 @@ const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId, onNewLog }
     stopListening();
     // 入力をクリア
     setCurrentTranscript("");
+  };
+
+  const handleNextQuestion = () => {
+    handleSendMessage(true); // go_to_next: true を送信
+  };
+
+  const handleAddResponse = () => {
+    handleSendMessage(false); // go_to_next: false を送信
   };
 
   const adjustTextareaHeight = () => {
@@ -185,12 +199,24 @@ return (
                 placeholder="話した内容がここに表示されます..."
               />
             </div>
-            <button
+            {/* <button
               onClick={handleNextQuestion}
               className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md shadow-md"
             >
               次の質問へ
-            </button>
+            </button> */}
+            <button
+    onClick={handleAddResponse}
+    className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-md shadow-md"
+  >
+    回答を送信
+  </button>
+  <button
+    onClick={handleNextQuestion}
+    className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md shadow-md"
+  >
+    次の質問へ
+  </button>
           </div>
         ) : (
           <div className="flex flex-col space-y-4">
@@ -202,12 +228,24 @@ return (
               className="flex-grow px-4 py-2 border rounded-md bg-white shadow-inner text-gray-800 resize-none overflow-hidden"
               placeholder="テキストを入力してください..."
             />
-            <button
+            {/* <button
               onClick={handleNextQuestion}
               className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md shadow-md"
             >
               次の質問へ
-            </button>
+            </button> */}
+            <button
+    onClick={handleAddResponse}
+    className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-md shadow-md"
+  >
+    回答を送信
+  </button>
+  <button
+    onClick={handleNextQuestion}
+    className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md shadow-md"
+  >
+    次の質問へ
+  </button>
           </div>
         )}
 
@@ -218,14 +256,47 @@ return (
           {feedback ? feedback : <div className="text-gray-500">感想はまだありません</div>}
         </div>
       </div>
-
-      {/* まとめ */}
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold text-gray-700">まとめ</h2>
-        <div className="p-4 bg-yellow-50 rounded shadow-md text-gray-800">
-          {summary ? summary : <div className="text-gray-500">まとめはまだありません</div>}
-        </div>
-      </div>
+  <h2 className="text-lg font-semibold text-gray-700">まとめ</h2>
+  <div className="p-4 bg-yellow-50 rounded shadow-md text-gray-800">
+    {(() => {
+      let parsedSummary: { 客体: string; 信念: string; 意志: string }[] = [];
+      if (summary) {
+        try {
+          // 不要な文字や記号を削除
+          const sanitizedSummary = summary.replace(/```json|```/g, "").trim();
+          parsedSummary = JSON.parse(sanitizedSummary);
+        } catch (error) {
+          console.error("Failed to parse summary JSON:", error);
+        }
+      }
+
+      return parsedSummary && parsedSummary.length > 0 ? (
+        <table className="min-w-full bg-white border-collapse border border-gray-200 rounded-md">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-200 px-4 py-2 text-left">客体</th>
+              <th className="border border-gray-200 px-4 py-2 text-left">信念</th>
+              <th className="border border-gray-200 px-4 py-2 text-left">意志</th>
+            </tr>
+          </thead>
+          <tbody>
+            {parsedSummary.map((item, index) => (
+              <tr key={index} className="hover:bg-gray-50">
+                <td className="border border-gray-200 px-4 py-2">{item.客体}</td>
+                <td className="border border-gray-200 px-4 py-2">{item.信念}</td>
+                <td className="border border-gray-200 px-4 py-2">{item.意志}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="text-gray-500">まとめはまだありません</div>
+      );
+    })()}
+  </div>
+</div>
+
     </div>
   </div>
 );

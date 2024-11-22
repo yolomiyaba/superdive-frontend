@@ -1,119 +1,74 @@
-// SessionChat.tsx
-import React, { useCallback, useEffect, useState } from "react";
-// import { Message } from "../types/chat";
+import React, { useEffect, useRef, useState } from "react";
 
 interface SessionChatProps {
   userId: string;
   sessionId: number;
-//   onNewLog: (message: string, type: 'user' | 'server') => void;
+  onNewLog: (message: string, type: "user" | "system") => void;
 }
 
-//22 
-// const processServerMessage = (rawMessage: string): Message => {
-    //     const timestamp = new Date().toLocaleTimeString();
-      
-    //     // システムメッセージの判定（参加・退出）
-    //     if (rawMessage.includes('joined the session') || rawMessage.includes('left the session')) {
-    //       return {
-    //         text: rawMessage,
-    //         type: 'system',
-    //         timestamp
-    //       };
-    //     }
-      
-    //     // エコーメッセージの判定（自分の発言）
-    //     if (rawMessage.startsWith('You: ')) {
-    //       return {
-    //         text: rawMessage.replace('You: ', ''),
-    //         type: 'user',
-    //         sender: 'You',
-    //         timestamp
-    //       };
-    //     }
-      
-    //     // 他のユーザーからのメッセージの判定
-    //     if (rawMessage.startsWith('User ')) {
-    //       const [, userId, ...messageParts] = rawMessage.match(/User (.*?): (.*)/) || [];
-    //       if (userId && messageParts) {
-    //         return {
-    //           text: messageParts.join(''),
-    //           type: 'server',
-    //           sender: userId,
-    //           timestamp
-    //         };
-    //       }
-    //     }
-      
-    //     // Echo: プレフィックスの除去
-    //     if (rawMessage.startsWith('Echo: ')) {
-    //       return {
-    //         text: rawMessage.replace('Echo: ', ''),
-    //         type: 'user',
-    //         sender: 'You',
-    //         timestamp
-    //       };
-    //     }
-      
-    //     // その他のメッセージ
-    //     return {
-    //       text: rawMessage,
-    //       type: 'server',
-    //       timestamp
-    //     };
-    //   };
+type MessageKind = "message" | "feedback" | "summary";
 
-const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId }) => { //onNewLog
-  const [input, setInput] = useState<string>("");
+interface Message {
+  kind: MessageKind;
+  content: string;
+}
+
+const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId, onNewLog }) => {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [lastMessage, setLastMessage] = useState<string>("");
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [currentTranscript, setCurrentTranscript] = useState<string>("");
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(
-    //   `ws://superdive-demo-backend-alb-179482814.ap-northeast-1.elb.amazonaws.com/ws/chat/${userId}`
-    `ws://0.0.0.0:8000/ws/chat/${userId}`
-    );
-    
-      ws.onmessage = (event) => {
-        console.log('Received message:', event.data);
-        setLastMessage(event.data);
-        // const message = processServerMessage(event.data);
-        // onNewLog(message.text, 'user');
-        // onNewLog(event.data.text, 'user');
-      };
+    const ws = new WebSocket(`ws://0.0.0.0:8000/ws/chat/${userId}`);
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
+    ws.onmessage = (event) => {
+      const data: Message = JSON.parse(event.data);
+      console.log("Received message:", data);
 
-      ws.onclose = () => {
-        console.log('WebSocket connection closed');
-      };
+      switch (data.kind) {
+        case "message":
+          // setMessages((prev) => [...prev, data]);
+          setLastMessage(data.content);
+          onNewLog(data.content, "system");
+          break;
+        case "feedback":
+          setFeedback(data.content);
+          break;
+        case "summary":
+          setSummary(data.content);
+          break;
+        default:
+          console.error("Unknown message type:", data.kind);
+      }
 
-      setSocket(ws);
+      // onNewLog(data.content, "system");
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    socketRef.current = ws;
 
     return () => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
-        // console.log('ds')
       }
     };
-  }, [userId, sessionId]); //, onNewLog
+  }, [userId, sessionId, onNewLog]);
 
-  const sendMessage = useCallback(
-    (message: string) => {
-      if (!socket || !message.trim()) return;
-      
-      socket.send(message);
-    //   onNewLog(message, 'user');
-      setInput("");
-    },
-    [socket] //, onNewLog
-  );
-
-  useEffect(() => {
-    if (!isVoiceMode || typeof window === "undefined") return;
+  const startListening = () => {
+    if (isListening || typeof window === "undefined") return;
 
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -123,78 +78,157 @@ const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId }) => { //o
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "ja-JP";
-    recognition.interimResults = false;
-    recognition.continuous = false;
+    if (!recognitionRef.current) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ja-JP";
+      recognition.interimResults = true;
+      recognition.continuous = true;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[0][0].transcript;
-      sendMessage(transcript);
-    };
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let interimTranscript = "";
 
-    if (isListening) {
-      recognition.start();
-    } else {
-      recognition.stop();
+        for (let i = 0; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          interimTranscript += transcript;
+        }
+
+        setCurrentTranscript(interimTranscript); // リアルタイムで更新
+      };
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+
+      recognitionRef.current = recognition;
     }
 
-    return () => recognition.abort();
-  }, [isListening, isVoiceMode, sendMessage]);
+    recognitionRef.current.start();
+  };
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex-grow overflow-y-auto p-4">
-        <h1 className="text-xl font-bold mb-4">お題</h1>
+  const stopListening = () => {
+    // if (recognitionRef.current) {
+    //   recognitionRef.current.stop();
+    // }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null; // 音声認識インスタンスをリセット
+    }
+    setIsListening(false);
+  };
 
+  const handleNextQuestion = () => {
+    if (!currentTranscript.trim()) return;
+
+    // WebSocketで送信
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(currentTranscript);
+    }
+
+    // ログに登録
+    onNewLog(currentTranscript, "user");
+
+    stopListening();
+    // 入力をクリア
+    setCurrentTranscript("");
+  };
+
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto"; // 高さをリセット
+      textarea.style.height = `${textarea.scrollHeight}px`; // 内容に応じて高さを調整
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight(); // 初期表示時に高さを調整
+  }, [currentTranscript]);
+
+return (
+  <div className="h-full flex flex-col bg-gray-100">
+    <div className="flex-grow overflow-y-auto p-4 space-y-6">
+      <h1 className="text-2xl font-bold text-gray-800">エネルギーを高めるセッション</h1>
+
+      {/* 問いかけ */}
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold text-gray-700">問いかけ</h2>
         <div className="p-2 bg-gray-100 rounded mb-4">
           {lastMessage ? `${lastMessage}` : "まだメッセージがありません"}
         </div>
+      </div>
 
-        <div className="space-y-4 mb-4">
+      <div className="space-y-4 mt-4">
           <button
             onClick={() => setIsVoiceMode((prev) => !prev)}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-md shadow-md"
           >
             {isVoiceMode ? "文字入力モードに切り替え" : "音声入力モードに切り替え"}
           </button>
-        </div>
+      </div>
 
-        {isVoiceMode ? (
-          <div>
+      {isVoiceMode ? (
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={isListening ? stopListening : startListening}
+                className={`px-6 py-2 font-medium text-white rounded-md shadow-md ${
+                  isListening ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+                }`}
+              >
+                {isListening ? "認識停止" : "認識開始"}
+              </button>
+              <textarea
+                ref={textareaRef}
+                value={currentTranscript}
+                onInput={adjustTextareaHeight}
+                readOnly
+                className="flex-grow px-4 py-2 border rounded-md bg-gray-50 text-gray-800 shadow-inner resize-none overflow-hidden"
+                placeholder="話した内容がここに表示されます..."
+              />
+            </div>
             <button
-              onClick={() => setIsListening((prev) => !prev)}
-              className={`px-4 py-2 ${
-                isListening ? 'bg-red-500' : 'bg-green-500'
-              } text-white rounded hover:opacity-80`}
+              onClick={handleNextQuestion}
+              className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md shadow-md"
             >
-              {isListening ? "認識停止" : "認識開始"}
+              次の質問へ
             </button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  sendMessage(input);
-                }
-              }}
-              placeholder="メッセージを入力"
-              className="flex-grow px-4 py-2 border rounded"
+          <div className="flex flex-col space-y-4">
+            <textarea
+              ref={textareaRef}
+              value={currentTranscript}
+              onChange={(e) => setCurrentTranscript(e.target.value)}
+              onInput={adjustTextareaHeight}
+              className="flex-grow px-4 py-2 border rounded-md bg-white shadow-inner text-gray-800 resize-none overflow-hidden"
+              placeholder="テキストを入力してください..."
             />
             <button
-              onClick={() => sendMessage(input)}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={handleNextQuestion}
+              className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md shadow-md"
             >
-              送信
+              次の質問へ
             </button>
           </div>
         )}
+
+      {/* 感想 */}
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold text-gray-700">感想</h2>
+        <div className="p-4 bg-blue-50 rounded shadow-md text-gray-800">
+          {feedback ? feedback : <div className="text-gray-500">感想はまだありません</div>}
+        </div>
+      </div>
+
+      {/* まとめ */}
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold text-gray-700">まとめ</h2>
+        <div className="p-4 bg-yellow-50 rounded shadow-md text-gray-800">
+          {summary ? summary : <div className="text-gray-500">まとめはまだありません</div>}
+        </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default SessionChat;

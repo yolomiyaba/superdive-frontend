@@ -25,7 +25,7 @@ const SessionChat: React.FC<SessionChatProps> = ({ userId, sessionId, onNewLog }
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://0.0.0.0:8000/ws/chat/${userId}`);
+    const ws = new WebSocket(`ws://superdive-demo-backend-alb-179482814.ap-northeast-1.elb.amazonaws.com/ws/chat/${userId}`);
 
     ws.onmessage = (event) => {
       const data: Message = JSON.parse(event.data);

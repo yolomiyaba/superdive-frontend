@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 # 作業ディレクトリを設定
-WORKDIR /workspace
+WORKDIR /
 
 # アプリケーションのソースコードをコンテナにコピー
 COPY . .
